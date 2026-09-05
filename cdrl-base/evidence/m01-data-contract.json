@@ -1,21 +1,224 @@
 {
-  "assignmentId": "m01-data-contract",
-  "commitSha": "REPLACE_AT_SUBMISSION",
-  "commands": [
-    "make setup",
-    "make verify",
-    "make run"
-  ],
-  "results": {
-    "starterBase": "pending_team_execution"
+  "contract_version": "1.0.0",
+  "created_at": "2026-02-15T00:00:00Z",
+  "author": "Ruben",
+  "language": "Node.js",
+  "database": {
+    "engine": "PostgreSQL",
+    "version": "16",
+    "compatibility": ["AWS RDS", "Docker", "Local"]
   },
-  "assumptions": [
-    "El equipo elegirá y documentará el lenguaje de la aplicación.",
-    "AWS Academy Learner Lab se usará solo si el servicio está habilitado.",
-    "Los datos iniciales serán sintéticos."
+  "tables": [
+    {
+      "name": "devices",
+      "description": "Registro de dispositivos IoT",
+      "primary_key": "device_id",
+      "columns": [
+        {
+          "name": "device_id",
+          "type": "UUID",
+          "constraints": ["PRIMARY KEY", "NOT NULL"],
+          "default": "gen_random_uuid()",
+          "description": "Identificador único del dispositivo"
+        },
+        {
+          "name": "serial_number",
+          "type": "VARCHAR(100)",
+          "constraints": ["UNIQUE", "NOT NULL"],
+          "description": "Número de serie del fabricante"
+        },
+        {
+          "name": "device_type",
+          "type": "VARCHAR(50)",
+          "constraints": ["NOT NULL"],
+          "description": "Tipo de dispositivo (sensor, actuador, gateway)"
+        },
+        {
+          "name": "firmware_version",
+          "type": "VARCHAR(20)",
+          "constraints": [],
+          "nullable": true,
+          "description": "Versión de firmware actual"
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(20)",
+          "constraints": ["CHECK (status IN ('active', 'inactive', 'maintenance'))"],
+          "default": "'active'",
+          "description": "Estado actual del dispositivo"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP",
+          "constraints": ["DEFAULT CURRENT_TIMESTAMP", "NOT NULL"],
+          "description": "Fecha de registro"
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "name": "telemetry_data",
+      "description": "Lecturas de telemetría de dispositivos",
+      "primary_key": "telemetry_id",
+      "columns": [
+        {
+          "name": "telemetry_id",
+          "type": "BIGSERIAL",
+          "constraints": ["PRIMARY KEY", "NOT NULL"],
+          "description": "Identificador autoincremental"
+        },
+        {
+          "name": "device_id",
+          "type": "UUID",
+          "constraints": ["NOT NULL", "FOREIGN KEY"],
+          "references": "devices(device_id)",
+          "description": "Dispositivo que genera la lectura"
+        },
+        {
+          "name": "timestamp",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "constraints": ["NOT NULL"],
+          "description": "Momento de la lectura"
+        },
+        {
+          "name": "temperature",
+          "type": "DECIMAL(5,2)",
+          "constraints": ["CHECK (temperature BETWEEN -50 AND 100)"],
+          "nullable": true,
+          "description": "Temperatura en grados Celsius"
+        },
+        {
+          "name": "humidity",
+          "type": "DECIMAL(5,2)",
+          "constraints": ["CHECK (humidity BETWEEN 0 AND 100)"],
+          "nullable": true,
+          "description": "Humedad relativa porcentual"
+        },
+        {
+          "name": "battery_level",
+          "type": "INTEGER",
+          "constraints": ["CHECK (battery_level BETWEEN 0 AND 100)"],
+          "nullable": true,
+          "description": "Nivel de batería porcentual"
+        },
+        {
+          "name": "metadata",
+          "type": "JSONB",
+          "constraints": [],
+          "default": "'{}'",
+          "nullable": true,
+          "description": "Metadatos adicionales en formato JSON"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "many_to_one",
+          "from": "telemetry_data",
+          "to": "devices",
+          "foreign_key": "device_id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    {
+      "name": "alerts",
+      "description": "Alertas generadas por anomalías en telemetría",
+      "primary_key": "alert_id",
+      "columns": [
+        {
+          "name": "alert_id",
+          "type": "BIGSERIAL",
+          "constraints": ["PRIMARY KEY", "NOT NULL"],
+          "description": "Identificador autoincremental"
+        },
+        {
+          "name": "device_id",
+          "type": "UUID",
+          "constraints": ["NOT NULL", "FOREIGN KEY"],
+          "references": "devices(device_id)",
+          "description": "Dispositivo que genera la alerta"
+        },
+        {
+          "name": "alert_type",
+          "type": "VARCHAR(50)",
+          "constraints": ["NOT NULL"],
+          "description": "Tipo de alerta (temperature, humidity, battery, connection)"
+        },
+        {
+          "name": "severity",
+          "type": "VARCHAR(20)",
+          "constraints": ["CHECK (severity IN ('low', 'medium', 'high', 'critical'))"],
+          "description": "Severidad de la alerta"
+        },
+        {
+          "name": "message",
+          "type": "TEXT",
+          "constraints": ["NOT NULL"],
+          "description": "Descripción de la alerta"
+        },
+        {
+          "name": "triggered_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "constraints": ["DEFAULT CURRENT_TIMESTAMP", "NOT NULL"],
+          "description": "Momento en que se genera la alerta"
+        },
+        {
+          "name": "resolved_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "constraints": [],
+          "nullable": true,
+          "description": "Momento en que se resuelve la alerta"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "many_to_one",
+          "from": "alerts",
+          "to": "devices",
+          "foreign_key": "device_id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    }
   ],
-  "limitations": [
-    "La base inicial no es una implementación completa de M01.",
-    "La imagen local de DynamoDB debe fijarse y reportarse cuando el equipo la use."
-  ]
+  "validations": {
+    "temperature_range": [-50, 100],
+    "humidity_range": [0, 100],
+    "battery_range": [0, 100],
+    "device_status": ["active", "inactive", "maintenance"],
+    "alert_severity": ["low", "medium", "high", "critical"],
+    "alert_types": ["temperature", "humidity", "battery", "connection"]
+  },
+  "indexes": [
+    {
+      "table": "devices",
+      "name": "idx_devices_serial",
+      "columns": ["serial_number"],
+      "unique": true
+    },
+    {
+      "table": "telemetry_data",
+      "name": "idx_telemetry_device_time",
+      "columns": ["device_id", "timestamp"],
+      "unique": false
+    },
+    {
+      "table": "telemetry_data",
+      "name": "idx_telemetry_timestamp",
+      "columns": ["timestamp"],
+      "unique": false
+    },
+    {
+      "table": "alerts",
+      "name": "idx_alerts_device_time",
+      "columns": ["device_id", "triggered_at"],
+      "unique": false
+    }
+  ],
+  "performance": {
+    "estimated_devices": 1000,
+    "readings_per_device_per_hour": 60,
+    "data_retention_days": 90,
+    "estimated_daily_records": 1440000
+  }
 }
