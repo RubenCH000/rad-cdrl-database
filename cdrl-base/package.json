@@ -1,0 +1,38 @@
+{
+  "name": "rad-cdrl-database",
+  "version": "1.0.0",
+  "description": "Cloud Data Reliability Lab (CDRL) - API de telemetria IoT sobre PostgreSQL",
+  "main": "src/index.js",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "migrate": "node scripts/run_migrations.js",
+    "seed": "node scripts/seed_data.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "testTimeout": 10000
+  }
+}
