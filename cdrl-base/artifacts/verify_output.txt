@@ -1,0 +1,5 @@
+npm test
+
+> rad-cdrl-database@1.0.0 test
+> jest
+
